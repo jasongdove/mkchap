@@ -68,13 +68,13 @@ def process(inputfile, outputfile):
 
 
 def get_chapters(inputfile, duration):
-    output = get_output(['ffprobe', '-f', 'lavfi', '-i', 'movie=\'{}\',blackdetect=d={}:pic_th={}:pix_th=0.00[out0]'.format(inputfile, min_black_seconds, ratio_black_pixels),
+    output = get_output(['ffprobe', '-f', 'lavfi', '-i', 'movie=\'{}\',blackdetect=d={}:pic_th={}:pix_th={}[out0]'.format(inputfile, min_black_seconds, ratio_black_pixels, pixel_threshold),
                          '-show_entries', 'frame_tags=lavfi.black_start,lavfi.black_end', '-of', 'default=nw=1', '-v', 'panic'])
     raw_pairs = filter(lambda c: len(c) == 2, chunks(output.splitlines(), 2))
-    numeric_pairs = map(
-        lambda p: [float(p[0].split('=')[1]), float(p[1].split('=')[1])], raw_pairs)
-    valid_pairs = filter(lambda p: p[0] > min_black_seconds and p[1] - p[0]
-                         > min_black_seconds, numeric_pairs)
+    numeric_pairs = list(map(
+        lambda p: [float(p[0].split('=')[1]), float(p[1].split('=')[1])], raw_pairs))
+    valid_pairs = list(filter(lambda p: p[0] > min_black_seconds and p[1] - p[0]
+                         >= min_black_seconds, numeric_pairs))
     chapters = list(map(lambda p: p[0] + (p[1] - p[0]) / 2.0, valid_pairs))
     chapters = [val for val in chapters for _ in range(2)]
     chapters.insert(0, 0)
