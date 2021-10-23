@@ -7,6 +7,7 @@ import os
 from io import StringIO
 import tempfile
 import pathlib
+import shutil
 
 # minimum number of seconds the video should be black
 min_black_seconds = 1.0
@@ -53,7 +54,7 @@ def process(inputfile, outputfile):
                 delete=False, suffix=source_extension)
             get_output(['ffmpeg', '-hide_banner', '-v', 'error', '-i', inputfile, '-i', temp_metadata.name,
                         '-map_metadata', '1', '-map_chapters', '1', '-codec', 'copy', '-y', temp_outfile.name])
-            os.replace(temp_outfile.name, outputfile)
+            shutil.move(temp_outfile.name, outputfile)
         else:
             get_output(['ffmpeg', '-hide_banner', '-v', 'error', '-i', inputfile, '-i', temp_metadata.name,
                         '-map_metadata', '1', '-map_chapters', '1', '-codec', 'copy', '-y', outputfile])
