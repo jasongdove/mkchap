@@ -68,7 +68,8 @@ def process(inputfile, outputfile):
 
 
 def get_chapters(inputfile, duration):
-    output = get_output(['ffprobe', '-f', 'lavfi', '-i', 'movie=\'{}\',blackdetect=d={}:pic_th={}:pix_th={}[out0]'.format(inputfile, min_black_seconds, ratio_black_pixels, pixel_threshold),
+    escaped_inputfile = escape(inputfile)
+    output = get_output(['ffprobe', '-f', 'lavfi', '-i', 'movie={},blackdetect=d={}:pic_th={}:pix_th={}[out0]'.format(escaped_inputfile, min_black_seconds, ratio_black_pixels, pixel_threshold),
                          '-show_entries', 'frame_tags=lavfi.black_start,lavfi.black_end', '-of', 'default=nw=1', '-v', 'panic'])
     raw_pairs = filter(lambda c: len(c) == 2, chunks(output.splitlines(), 2))
     numeric_pairs = list(map(
@@ -108,6 +109,8 @@ def chunks(lst, n):
     for i in range(0, len(lst), n):
         yield lst[i:i + n]
 
+def escape(text):
+    return text.replace('\'', '\\\\\\\'')
 
 if __name__ == "__main__":
     main(sys.argv[1:])
