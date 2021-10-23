@@ -61,7 +61,7 @@ def process(inputfile, outputfile):
     finally:
         os.remove(temp_metadata.name)
 
-    print('created {} chapter markers'.format(len(chapters)))
+    print('created {} chapter markers'.format(max(len(chapters) - 1, 0)))
 
 
 def get_chapters(inputfile, duration):
@@ -70,7 +70,7 @@ def get_chapters(inputfile, duration):
     raw_pairs = filter(lambda c: len(c) == 2, chunks(output.splitlines(), 2))
     numeric_pairs = map(
         lambda p: [float(p[0].split('=')[1]), float(p[1].split('=')[1])], raw_pairs)
-    valid_pairs = filter(lambda p: p[1] - p[0]
+    valid_pairs = filter(lambda p: p[0] > min_black_seconds and p[1] - p[0]
                          > min_black_seconds, numeric_pairs)
     chapters = list(map(lambda p: p[0] + (p[1] - p[0]) / 2.0, valid_pairs))
     chapters = [val for val in chapters for _ in range(2)]
