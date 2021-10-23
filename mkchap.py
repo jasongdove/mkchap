@@ -12,8 +12,11 @@ import shutil
 # minimum number of seconds the video should be black
 min_black_seconds = 1.0
 
-# minimum ratio of black pixels to non-black pixels
+# threshold (% of pixels) for considering a picture black
 ratio_black_pixels = 0.90
+
+# threshold for considering a pixel black. may need to bump this up if black isn't fully black
+pixel_threshold = 0.00
 
 
 def main(argv):
