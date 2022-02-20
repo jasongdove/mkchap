@@ -174,11 +174,13 @@ public static class Program
                 var finish = c[1];
                 var state = State.Ok;
 
+                var midpoint = start + (finish - start) / 2.0;
+
                 if (start.TotalSeconds < minBlackSeconds || (finish - start).TotalSeconds < minBlackSeconds)
                 {
                     state = State.TooShort;
                 }
-                else if (windows.All(w => !w.Contains(start) && !w.Contains(finish)))
+                else if (windows.All(w => !w.Contains(midpoint)))
                 {
                     state = State.OutsideOfWindows;
                 }
