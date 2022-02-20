@@ -15,6 +15,8 @@ public static class Program
                 {
                     try
                     {
+                        var outputFile = opts.Output ?? string.Empty;
+                        
                         var maybeDuration = await GetDuration(opts.Input);
                         foreach (var duration in maybeDuration)
                         {
@@ -37,13 +39,39 @@ public static class Program
                             {
                                 Console.WriteLine(chapter);
                             }
+                            
+                            if (string.IsNullOrWhiteSpace(outputFile))
+                            {
+                                return 0;
+                            }
 
                             var ffMetadata = GetFFMetadata(chapters);
-                            Console.WriteLine(ffMetadata);
+                            // Console.WriteLine(ffMetadata);
 
-                            var metadataFile = await WriteFFMetadata(ffMetadata);
-                            Console.WriteLine(metadataFile);
-                            
+                            var metadataFile = string.Empty;
+
+                            try
+                            {
+                                metadataFile = await WriteFFMetadata(ffMetadata);
+                                // Console.WriteLine(metadataFile);
+
+                                await WriteMetadataToFile(opts.Input, outputFile, metadataFile);
+                            }
+                            finally
+                            {
+                                try
+                                {
+                                    if (File.Exists(metadataFile))
+                                    {
+                                        File.Delete(metadataFile);
+                                    }
+                                }
+                                catch
+                                {
+                                    // do nothing
+                                }
+                            }
+
                             return 0;
                         }
                     }
@@ -151,8 +179,7 @@ public static class Program
                 {
                     state = State.TooShort;
                 }
-                
-                if (windows.All(w => !w.Contains(start) && !w.Contains(finish)))
+                else if (windows.All(w => !w.Contains(start) && !w.Contains(finish)))
                 {
                     state = State.OutsideOfWindows;
                 }
@@ -205,6 +232,59 @@ public static class Program
         return file;
     }
 
+    private static async Task WriteMetadataToFile(string inputFile, string outputFile, string metadataFile)
+    {
+        if (inputFile == outputFile)
+        {
+            var extension = Path.GetExtension(inputFile);
+            var tempFile = Path.ChangeExtension(Path.GetTempFileName(), extension);
+            await PerformWrite(inputFile, tempFile, metadataFile);
+            File.Move(tempFile, outputFile, true);
+        }
+        else
+        {
+            await PerformWrite(inputFile, outputFile, metadataFile);
+        }
+    }
+
+    private static async Task PerformWrite(string inputFile, string outputFile, string metadataFile)
+    {
+        var process = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "ffmpeg",
+                UseShellExecute = false,
+                RedirectStandardError = false,
+                RedirectStandardOutput = false
+            }
+        };
+
+        var arguments = new List<string>
+        {
+            "-hide_banner",
+            "-v", "error",
+            "-i", inputFile,
+            "-i", metadataFile,
+            "-map_metadata", "1",
+            "-map_chapters", "1",
+            "-codec", "copy",
+            "-y", outputFile
+        };
+
+        foreach (var arg in arguments)
+        {
+            process.StartInfo.ArgumentList.Add(arg);
+        }
+
+        process.Start();
+        
+        await process.WaitForExitAsync();
+        
+        // ReSharper disable once MethodHasAsyncOverload
+        process.WaitForExit();
+    }
+
     private enum State
     {
         TooShort,
@@ -220,8 +300,6 @@ public static class Program
 
     private record Chapter(TimeSpan Start, TimeSpan Finish)
     {
-        // ffmetadata.write(";FFMETADATA1\n")
-        //     ffmetadata.write("\n")
         public string GetMetadata(int num)
         {
             var sb = new StringBuilder();
