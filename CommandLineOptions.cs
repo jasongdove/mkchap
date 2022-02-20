@@ -15,4 +15,7 @@ public class CommandLineOptions
 
     [Option(shortName: 'b', longName: "black", Required = false, Default = 0.1d)]
     public double BlackPixelThreshold { get; set; }
+
+    [Option(shortName: 'w', longName: "windows", Required = false)]
+    public string Windows { get; set; }
 }

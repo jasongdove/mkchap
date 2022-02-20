@@ -17,14 +17,26 @@ public static class Program
                         var maybeDuration = await GetDuration(opts.Input);
                         foreach (var duration in maybeDuration)
                         {
+                            var windows = GetWindows(opts.Windows, duration);
                             var blackDetectOutput = await BlackDetect(opts.Input, opts.MinBlackSeconds, opts.RatioBlackPixels,
                                 opts.BlackPixelThreshold);
-                            var blackSections = GetBlackSections(blackDetectOutput, opts.MinBlackSeconds);
+                            var blackSections = GetBlackSections(blackDetectOutput, opts.MinBlackSeconds, windows);
                             foreach (var section in blackSections)
                             {
                                 Console.WriteLine(section);
                             }
 
+                            var okSections = blackSections.Filter(bs => bs.State == State.Ok).ToList();
+                            var doubled = new List<BlackSection>();
+                            doubled.AddRange(okSections);
+                            doubled.AddRange(okSections);
+
+                            var chapters = GetChapters(doubled, duration);
+                            foreach (var chapter in chapters)
+                            {
+                                Console.WriteLine(chapter);
+                            }
+                            
                             return 0;
                         }
                     }
@@ -36,7 +48,7 @@ public static class Program
                     return -2;
                 },
                 _ => Task.FromResult(-1));
-
+    
     private static async Task<Option<TimeSpan>> GetDuration(string inputFile)
     {
         var output = await GetFFprobeOutput(new List<string>
@@ -107,7 +119,8 @@ public static class Program
         return await process.StandardOutput.ReadToEndAsync();
     }
 
-    private static List<BlackSection> GetBlackSections(string blackDetectOutput, double minBlackSeconds) =>
+    private static List<BlackSection> GetBlackSections(string blackDetectOutput, double minBlackSeconds,
+        List<Window> windows) =>
         blackDetectOutput.Split("\n")
             .Map(s => s.Trim())
             .Filter(s => !string.IsNullOrWhiteSpace(s))
@@ -115,14 +128,65 @@ public static class Program
                 NumberFormatInfo.InvariantInfo)))
             .Chunk(2)
             .Filter(c => c.Length == 2)
-            .Map(c => new BlackSection(c[0], c[1]))
-            .Filter(bs => bs.Start.TotalSeconds >= minBlackSeconds && bs.Duration.TotalSeconds >= minBlackSeconds)
+            .Map(c =>
+            {
+                var start = c[0];
+                var finish = c[1];
+                var state = State.Ok;
+
+                if (start.TotalSeconds < minBlackSeconds || (finish - start).TotalSeconds < minBlackSeconds)
+                {
+                    state = State.TooShort;
+                }
+                
+                if (windows.All(w => !w.Contains(start) && !w.Contains(finish)))
+                {
+                    state = State.OutsideOfWindows;
+                }
+
+                return new BlackSection(c[0], c[1], state);
+            })
             .ToList();
 
-    private record BlackSection(TimeSpan Start, TimeSpan Finish)
+    private static List<Window> GetWindows(string? windowsOption, TimeSpan duration) =>
+        (windowsOption ?? string.Empty).Split(",")
+            .Map(s => s.Trim())
+            .Filter(s => !string.IsNullOrWhiteSpace(s))
+            .Map(s =>
+            {
+                var split = s.Split("-");
+                var start = TimeSpan.FromSeconds(double.Parse(split[0]));
+                var finish = TimeSpan.FromSeconds(double.Parse(split[1]));
+                return new Window(start, finish);
+            })
+            .DefaultIfEmpty(new Window(TimeSpan.Zero, duration))
+            .ToList();
+
+    private static List<Chapter> GetChapters(List<BlackSection> blackSections, TimeSpan duration)
+    {
+        var markers = new List<TimeSpan> { TimeSpan.Zero };
+        markers.AddRange(blackSections.OrderBy(bs => bs.Start).Map(bs => bs.Midpoint()));
+        markers.Add(duration);
+        return markers.Chunk(2).Map(c => new Chapter(c[0], c[1])).ToList();
+    }
+    
+    private enum State
+    {
+        TooShort,
+        OutsideOfWindows,
+        Ok
+    }
+
+    private record BlackSection(TimeSpan Start, TimeSpan Finish, State State)
     {
         public TimeSpan Duration => Finish - Start;
+        public TimeSpan Midpoint() => Start + (Finish - Start) / 2.0;
     };
 
     private record Chapter(TimeSpan Start, TimeSpan Finish);
+
+    private record Window(TimeSpan Start, TimeSpan Finish)
+    {
+        public bool Contains(TimeSpan time) => time >= Start && time <= Finish;
+    }
 }
