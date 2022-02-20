@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using CommandLine;
 using LanguageExt;
 using static LanguageExt.Prelude;
@@ -9,6 +11,12 @@ namespace MkChap;
 
 public static class Program
 {
+    private static readonly JsonSerializerOptions Options = new()
+    {
+        Converters = { new JsonStringEnumConverter() },
+        WriteIndented = true
+    };
+    
     public static async Task<int> Main(string[] args) =>
         await Parser.Default.ParseArguments<CommandLineOptions>(args)
             .MapResult(async opts =>
@@ -24,10 +32,6 @@ public static class Program
                             var blackDetectOutput = await BlackDetect(opts.Input, opts.MinBlackSeconds, opts.RatioBlackPixels,
                                 opts.BlackPixelThreshold);
                             var blackSections = GetBlackSections(blackDetectOutput, opts.MinBlackSeconds, windows);
-                            foreach (var section in blackSections)
-                            {
-                                Console.WriteLine(section);
-                            }
 
                             var okSections = blackSections.Filter(bs => bs.State == State.Ok).ToList();
                             var doubled = new List<BlackSection>();
@@ -35,10 +39,9 @@ public static class Program
                             doubled.AddRange(okSections);
 
                             var chapters = GetChapters(doubled, duration);
-                            foreach (var chapter in chapters)
-                            {
-                                Console.WriteLine(chapter);
-                            }
+
+                            var analysisResult = new AnalysisResult(blackSections, chapters);
+                            Console.WriteLine(JsonSerializer.Serialize(analysisResult, Options));
                             
                             if (string.IsNullOrWhiteSpace(outputFile))
                             {
@@ -46,15 +49,11 @@ public static class Program
                             }
 
                             var ffMetadata = GetFFMetadata(chapters);
-                            // Console.WriteLine(ffMetadata);
-
                             var metadataFile = string.Empty;
 
                             try
                             {
                                 metadataFile = await WriteFFMetadata(ffMetadata);
-                                // Console.WriteLine(metadataFile);
-
                                 await WriteMetadataToFile(opts.Input, outputFile, metadataFile);
                             }
                             finally
@@ -314,6 +313,8 @@ public static class Program
             return sb.ToString();
         }
     }
+
+    private record AnalysisResult(List<BlackSection> BlackSections, List<Chapter> Chapters);
 
     private record Window(TimeSpan Start, TimeSpan Finish)
     {
