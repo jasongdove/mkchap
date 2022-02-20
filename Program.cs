@@ -40,6 +40,9 @@ public static class Program
 
                             var ffMetadata = GetFFMetadata(chapters);
                             Console.WriteLine(ffMetadata);
+
+                            var metadataFile = await WriteFFMetadata(ffMetadata);
+                            Console.WriteLine(metadataFile);
                             
                             return 0;
                         }
@@ -74,6 +77,20 @@ public static class Program
     private static async Task<string> BlackDetect(string inputFile, double minBlackSeconds, double ratioBlackPixels,
         double blackPixelThreshold)
     {
+        inputFile = FixFileName(inputFile);
+        return await GetFFprobeOutput(new List<string>
+        {
+            "-f", "lavfi",
+            "-i",
+            $"movie={inputFile},blackdetect=d={minBlackSeconds}:pic_th={ratioBlackPixels}:pix_th={blackPixelThreshold}[out0]",
+            "-show_entries", "frame_tags=lavfi.black_start,lavfi.black_end",
+            "-of", "default=nw=1",
+            "-v", "panic"
+        });
+    }
+
+    private static string FixFileName(string inputFile)
+    {
         // rework filename in a format that works on windows
         if (OperatingSystem.IsWindows())
         {
@@ -84,15 +101,7 @@ public static class Program
             inputFile = inputFile.Replace(@":/", @"\:/");
         }
 
-        return await GetFFprobeOutput(new List<string>
-        {
-            "-f", "lavfi",
-            "-i",
-            $"movie={inputFile},blackdetect=d={minBlackSeconds}:pic_th={ratioBlackPixels}:pix_th={blackPixelThreshold}[out0]",
-            "-show_entries", "frame_tags=lavfi.black_start,lavfi.black_end",
-            "-of", "default=nw=1",
-            "-v", "panic"
-        });
+        return inputFile;
     }
 
     private static async Task<string> GetFFprobeOutput(IEnumerable<string> arguments)
@@ -187,6 +196,13 @@ public static class Program
         }
 
         return sb.ToString();
+    }
+
+    private static async Task<string> WriteFFMetadata(string ffMetadata)
+    {
+        var file = Path.GetTempFileName();
+        await File.WriteAllTextAsync(file, ffMetadata);
+        return file;
     }
 
     private enum State
