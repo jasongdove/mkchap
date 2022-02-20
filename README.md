@@ -9,7 +9,7 @@ This app requires ffprobe and ffmpeg
 ## Usage
 
 ```bash
-./mkchap -i <inputfile> -s <min_black_seconds> -r <ratio_black_pixels> -b <black_pixel_threshold> -w <window_list> [-o <outputfile>]
+./mkchap -i <inputfile> [-s <min_black_seconds>] [-r <ratio_black_pixels>] [-b <black_pixel_threshold>] [-w <window_list>] [-o <outputfile>]
 ```
 
 - `min_black_seconds` is the minimum number of seconds the video should be black to insert a chapter marker
