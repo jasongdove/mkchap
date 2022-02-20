@@ -176,7 +176,7 @@ jobs:
         shell: bash
         run: |
           # Define some variables for things we need
-          release_name="MkChap-${{ inputs.release_version }}-${{ matrix.target }}"
+          release_name="mkchap-${{ inputs.release_version }}-${{ matrix.target }}"
           echo "RELEASE_NAME=${release_name}" >> $GITHUB_ENV
 
           # Build everything
