@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
+using System.Text;
 using CommandLine;
 using LanguageExt;
 using static LanguageExt.Prelude;
@@ -36,6 +37,9 @@ public static class Program
                             {
                                 Console.WriteLine(chapter);
                             }
+
+                            var ffMetadata = GetFFMetadata(chapters);
+                            Console.WriteLine(ffMetadata);
                             
                             return 0;
                         }
@@ -169,7 +173,22 @@ public static class Program
         markers.Add(duration);
         return markers.Chunk(2).Map(c => new Chapter(c[0], c[1])).ToList();
     }
-    
+
+    private static string GetFFMetadata(List<Chapter> chapters)
+    {
+        var sb = new StringBuilder();
+
+        sb.Append(";FFMETADATA1\n");
+        sb.Append('\n');
+
+        for (var i = 0; i < chapters.Count; i++)
+        {
+            sb.Append(chapters[i].GetMetadata(i + 1));
+        }
+
+        return sb.ToString();
+    }
+
     private enum State
     {
         TooShort,
@@ -183,7 +202,24 @@ public static class Program
         public TimeSpan Midpoint() => Start + (Finish - Start) / 2.0;
     };
 
-    private record Chapter(TimeSpan Start, TimeSpan Finish);
+    private record Chapter(TimeSpan Start, TimeSpan Finish)
+    {
+        // ffmetadata.write(";FFMETADATA1\n")
+        //     ffmetadata.write("\n")
+        public string GetMetadata(int num)
+        {
+            var sb = new StringBuilder();
+
+            sb.Append("[CHAPTER]\n");
+            sb.Append("TIMEBASE=1/1000\n");
+            sb.Append($"START={Start.TotalMilliseconds.ToString(NumberFormatInfo.InvariantInfo)}\n");
+            sb.Append($"END={Finish.TotalMilliseconds.ToString(NumberFormatInfo.InvariantInfo)}\n");
+            sb.Append($"title=Chapter {num}\n");
+            sb.Append('\n');
+            
+            return sb.ToString();
+        }
+    }
 
     private record Window(TimeSpan Start, TimeSpan Finish)
     {
