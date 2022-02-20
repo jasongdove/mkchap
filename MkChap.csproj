@@ -13,4 +13,11 @@
       <PackageReference Include="LanguageExt.Core" Version="4.0.3" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Content Include=".github\FUNDING.yml" />
+      <Content Include=".github\workflows\artifacts.yml" />
+      <Content Include=".github\workflows\ci.yml" />
+      <Content Include=".github\workflows\pr.yml" />
+    </ItemGroup>
+
 </Project>
