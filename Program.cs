@@ -195,9 +195,21 @@ public static class Program
             .Filter(s => !string.IsNullOrWhiteSpace(s))
             .Map(s =>
             {
-                var split = s.Split("-");
-                var start = TimeSpan.FromSeconds(double.Parse(split[0]));
-                var finish = TimeSpan.FromSeconds(double.Parse(split[1]));
+                var split = s.Split(":");
+                var startVal = double.Parse(split[0]);
+                if (startVal < 0)
+                {
+                    startVal += duration.TotalSeconds;
+                }
+
+                var finishVal = double.Parse(split[1]);
+                if (finishVal < 0)
+                {
+                    finishVal += duration.TotalSeconds;
+                }
+
+                var start = TimeSpan.FromSeconds(startVal);
+                var finish = TimeSpan.FromSeconds(finishVal);
                 return new Window(start, finish);
             })
             .DefaultIfEmpty(new Window(TimeSpan.Zero, duration))

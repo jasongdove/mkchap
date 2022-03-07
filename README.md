@@ -18,6 +18,6 @@ This app requires ffprobe and ffmpeg
   - A good starting value is `0.9`
 - `black_pixel_threshold` is the maximum luminance (0 to 1) for which a pixel is considered black. increasing this will detect dark greys as black
   - A good starting value is `0.0`
-- `window_list` is a comma-separated list of second ranges (i.e. `55-65,505-515`). any black sections occurring outside of these windows will be ignored
+- `window_list` is a comma-separated list of second ranges (i.e. `55:65,505:515`). any black sections occurring outside of these windows will be ignored
 
 If no output file is specified, mkchap will operate in a "dry-run" mode and print the detected black sections and resulting chapters.
