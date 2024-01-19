@@ -5,7 +5,7 @@ namespace MkChap;
 public class CommandLineOptions
 {
     [Value(index: 0, Required = true, HelpText = "Input file")]
-    public string Input { get; set; }
+    public string? Input { get; set; }
 
     [Option(shortName: 's', longName: "seconds", Required = false, Default = 1.0d)]
     public double MinBlackSeconds { get; set; }

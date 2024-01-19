@@ -49,7 +49,7 @@ jobs:
 #      - name: Setup .NET Core
 #        uses: actions/setup-dotnet@v1
 #        with:
-#          dotnet-version: 6.0.x
+#          dotnet-version: 8.0.x
 #
 #      - name: Clean
 #        run: dotnet clean --configuration Release && dotnet nuget locals all --clear
@@ -71,7 +71,7 @@ jobs:
 #
 #      - name: Build
 #        shell: bash
-#        run: dotnet publish ErsatzTV/ErsatzTV.csproj --framework net6.0 --runtime "${{ matrix.target }}" -c Release -o publish -p:InformationalVersion="${{ inputs.release_version }}-${{ matrix.target }}" -p:EnableCompressionInSingleFile=true -p:DebugType=Embedded -p:PublishSingleFile=true --self-contained true
+#        run: dotnet publish ErsatzTV/ErsatzTV.csproj --framework net8.0 --runtime "${{ matrix.target }}" -c Release -o publish -p:InformationalVersion="${{ inputs.release_version }}-${{ matrix.target }}" -p:EnableCompressionInSingleFile=true -p:DebugType=Embedded -p:PublishSingleFile=true --self-contained true
 #
 #      - name: Bundle
 #        shell: bash
@@ -161,10 +161,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup .NET Core
+      - name: Setup .NET
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: 6.0.x
+          dotnet-version: 8.0.x
 
       - name: Clean
         run: dotnet clean --configuration Release && dotnet nuget locals all --clear
@@ -180,7 +180,7 @@ jobs:
           echo "RELEASE_NAME=${release_name}" >> $GITHUB_ENV
 
           # Build everything
-          dotnet publish MkChap.csproj --framework net6.0 --runtime "${{ matrix.target }}" -c Release -o "$release_name" -p:InformationalVersion="${{ inputs.release_version }}-${{ matrix.target }}" -p:EnableCompressionInSingleFile=true -p:DebugType=Embedded -p:PublishSingleFile=true --self-contained true
+          dotnet publish MkChap.csproj --framework net8.0 --runtime "${{ matrix.target }}" -c Release -o "$release_name" -p:InformationalVersion="${{ inputs.release_version }}-${{ matrix.target }}" -p:EnableCompressionInSingleFile=true -p:DebugType=Embedded -p:PublishSingleFile=true --self-contained true
 
           # Pack files
           if [ "${{ matrix.kind }}" == "windows" ]; then

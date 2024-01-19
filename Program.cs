@@ -25,11 +25,13 @@ public static class Program
                     {
                         var outputFile = opts.Output ?? string.Empty;
                         
-                        var maybeDuration = await GetDuration(opts.Input);
+                        var maybeDuration = await GetDuration(opts.Input ?? string.Empty);
                         foreach (var duration in maybeDuration)
                         {
                             var windows = GetWindows(opts.Windows, duration);
-                            var blackDetectOutput = await BlackDetect(opts.Input, opts.MinBlackSeconds, opts.RatioBlackPixels,
+                            var blackDetectOutput = await BlackDetect(
+                                opts.Input ?? string.Empty, opts.MinBlackSeconds,
+                                opts.RatioBlackPixels,
                                 opts.BlackPixelThreshold);
                             var blackSections = GetBlackSections(blackDetectOutput, opts.MinBlackSeconds, windows);
 
@@ -54,7 +56,7 @@ public static class Program
                             try
                             {
                                 metadataFile = await WriteFFMetadata(ffMetadata);
-                                await WriteMetadataToFile(opts.Input, outputFile, metadataFile);
+                                await WriteMetadataToFile(opts.Input ?? string.Empty, outputFile, metadataFile);
                             }
                             finally
                             {
@@ -85,6 +87,11 @@ public static class Program
     
     private static async Task<Option<TimeSpan>> GetDuration(string inputFile)
     {
+        if (string.IsNullOrWhiteSpace(inputFile))
+        {
+            return Option<TimeSpan>.None;
+        }
+
         var output = await GetFFprobeOutput(new List<string>
         {
             "-v", "panic",
