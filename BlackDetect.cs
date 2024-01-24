@@ -37,6 +37,9 @@ public class BlackDetect : FFprobeBase
         // escape apostrophes
         inputFile = inputFile.Replace("'", @"\\\'");
 
+        // escape commas
+        inputFile = inputFile.Replace(",", @"\\\,");
+
         return inputFile;
     }
 }
