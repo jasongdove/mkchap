@@ -28,11 +28,14 @@ public class BlackDetect : FFprobeBase
         if (OperatingSystem.IsWindows())
         {
             // \ is escape, so use / for directory separators
-            inputFile = inputFile.Replace(@"\", @"/");
+            inputFile = inputFile.Replace(@"\", "/");
 
             // colon after drive letter needs to be escaped
-            inputFile = inputFile.Replace(@":/", @"\:/");
+            inputFile = inputFile.Replace(":/", @"\:/");
         }
+        
+        // escape apostrophes
+        inputFile = inputFile.Replace("'", @"\\\'");
 
         return inputFile;
     }
