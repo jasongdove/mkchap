@@ -1,11 +1,8 @@
-﻿using System.Diagnostics;
-using System.Globalization;
-using System.Text;
+﻿using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CommandLine;
-using LanguageExt;
-using static LanguageExt.Prelude;
+using MkChap.Models;
 
 namespace MkChap;
 
@@ -25,12 +22,12 @@ public static class Program
                     {
                         var outputFile = opts.Output ?? string.Empty;
                         
-                        var maybeDuration = await GetDuration(opts.Input ?? string.Empty);
+                        var maybeDuration = await Duration.GetDuration(opts.Input);
                         foreach (var duration in maybeDuration)
                         {
                             var windows = GetWindows(opts.Windows, duration);
-                            var blackDetectOutput = await BlackDetect(
-                                opts.Input ?? string.Empty, opts.MinBlackSeconds,
+                            var blackDetectOutput = await BlackDetect.Detect(
+                                opts.Input, opts.MinBlackSeconds,
                                 opts.RatioBlackPixels,
                                 opts.BlackPixelThreshold);
                             var blackSections = GetBlackSections(blackDetectOutput, opts.MinBlackSeconds, windows);
@@ -45,32 +42,9 @@ public static class Program
                             var analysisResult = new AnalysisResult(blackSections, chapters);
                             Console.WriteLine(JsonSerializer.Serialize(analysisResult, Options));
                             
-                            if (string.IsNullOrWhiteSpace(outputFile))
+                            if (!string.IsNullOrWhiteSpace(outputFile))
                             {
-                                return 0;
-                            }
-
-                            var ffMetadata = GetFFMetadata(chapters);
-                            var metadataFile = string.Empty;
-
-                            try
-                            {
-                                metadataFile = await WriteFFMetadata(ffMetadata);
-                                await WriteMetadataToFile(opts.Input ?? string.Empty, outputFile, metadataFile);
-                            }
-                            finally
-                            {
-                                try
-                                {
-                                    if (File.Exists(metadataFile))
-                                    {
-                                        File.Delete(metadataFile);
-                                    }
-                                }
-                                catch
-                                {
-                                    // do nothing
-                                }
+                                await ChapterWriter.WriteToFile(opts.Input, outputFile, chapters);
                             }
 
                             return 0;
@@ -85,87 +59,6 @@ public static class Program
                 },
                 _ => Task.FromResult(-1));
     
-    private static async Task<Option<TimeSpan>> GetDuration(string inputFile)
-    {
-        if (string.IsNullOrWhiteSpace(inputFile))
-        {
-            return Option<TimeSpan>.None;
-        }
-
-        var output = await GetFFprobeOutput(new List<string>
-        {
-            "-v", "panic",
-            "-show_entries", "format=duration",
-            "-of", "default=nw=1:nokey=1",
-            inputFile
-        });
-
-        if (double.TryParse(output, NumberStyles.Number, NumberFormatInfo.InvariantInfo, out var value))
-        {
-            return TimeSpan.FromSeconds(value);
-        }
-
-        return None;
-    }
-
-    private static async Task<string> BlackDetect(string inputFile, double minBlackSeconds, double ratioBlackPixels,
-        double blackPixelThreshold)
-    {
-        inputFile = FixFileName(inputFile);
-        return await GetFFprobeOutput(new List<string>
-        {
-            "-f", "lavfi",
-            "-i",
-            $"movie={inputFile},blackdetect=d={minBlackSeconds}:pic_th={ratioBlackPixels}:pix_th={blackPixelThreshold}[out0]",
-            "-show_entries", "frame_tags=lavfi.black_start,lavfi.black_end",
-            "-of", "default=nw=1",
-            "-v", "panic"
-        });
-    }
-
-    private static string FixFileName(string inputFile)
-    {
-        // rework filename in a format that works on windows
-        if (OperatingSystem.IsWindows())
-        {
-            // \ is escape, so use / for directory separators
-            inputFile = inputFile.Replace(@"\", @"/");
-
-            // colon after drive letter needs to be escaped
-            inputFile = inputFile.Replace(@":/", @"\:/");
-        }
-
-        return inputFile;
-    }
-
-    private static async Task<string> GetFFprobeOutput(IEnumerable<string> arguments)
-    {
-        var process = new Process
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = "ffprobe",
-                UseShellExecute = false,
-                RedirectStandardError = false,
-                RedirectStandardOutput = true
-            }
-        };
-
-        foreach (var arg in arguments)
-        {
-            process.StartInfo.ArgumentList.Add(arg);
-        }
-
-        process.Start();
-        
-        await process.WaitForExitAsync();
-        
-        // ReSharper disable once MethodHasAsyncOverload
-        process.WaitForExit();
-
-        return await process.StandardOutput.ReadToEndAsync();
-    }
-
     private static List<BlackSection> GetBlackSections(string blackDetectOutput, double minBlackSeconds,
         List<Window> windows) =>
         blackDetectOutput.Split("\n")
@@ -228,117 +121,5 @@ public static class Program
         markers.AddRange(blackSections.OrderBy(bs => bs.Start).Map(bs => bs.Midpoint()));
         markers.Add(duration);
         return markers.Chunk(2).Map(c => new Chapter(c[0], c[1])).ToList();
-    }
-
-    private static string GetFFMetadata(List<Chapter> chapters)
-    {
-        var sb = new StringBuilder();
-
-        sb.Append(";FFMETADATA1\n");
-        sb.Append('\n');
-
-        for (var i = 0; i < chapters.Count; i++)
-        {
-            sb.Append(chapters[i].GetMetadata(i + 1));
-        }
-
-        return sb.ToString();
-    }
-
-    private static async Task<string> WriteFFMetadata(string ffMetadata)
-    {
-        var file = Path.GetTempFileName();
-        await File.WriteAllTextAsync(file, ffMetadata);
-        return file;
-    }
-
-    private static async Task WriteMetadataToFile(string inputFile, string outputFile, string metadataFile)
-    {
-        if (inputFile == outputFile)
-        {
-            var extension = Path.GetExtension(inputFile);
-            var tempFile = Path.ChangeExtension(Path.GetTempFileName(), extension);
-            await PerformWrite(inputFile, tempFile, metadataFile);
-            File.Move(tempFile, outputFile, true);
-        }
-        else
-        {
-            await PerformWrite(inputFile, outputFile, metadataFile);
-        }
-    }
-
-    private static async Task PerformWrite(string inputFile, string outputFile, string metadataFile)
-    {
-        var process = new Process
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = "ffmpeg",
-                UseShellExecute = false,
-                RedirectStandardError = false,
-                RedirectStandardOutput = false
-            }
-        };
-
-        var arguments = new List<string>
-        {
-            "-hide_banner",
-            "-v", "error",
-            "-i", inputFile,
-            "-i", metadataFile,
-            "-map_metadata", "1",
-            "-map_chapters", "1",
-            "-codec", "copy",
-            "-y", outputFile
-        };
-
-        foreach (var arg in arguments)
-        {
-            process.StartInfo.ArgumentList.Add(arg);
-        }
-
-        process.Start();
-        
-        await process.WaitForExitAsync();
-        
-        // ReSharper disable once MethodHasAsyncOverload
-        process.WaitForExit();
-    }
-
-    private enum State
-    {
-        TooShort,
-        OutsideOfWindows,
-        Ok
-    }
-
-    private record BlackSection(TimeSpan Start, TimeSpan Finish, State State)
-    {
-        public TimeSpan Duration => Finish - Start;
-        public TimeSpan Midpoint() => Start + (Finish - Start) / 2.0;
-    };
-
-    private record Chapter(TimeSpan Start, TimeSpan Finish)
-    {
-        public string GetMetadata(int num)
-        {
-            var sb = new StringBuilder();
-
-            sb.Append("[CHAPTER]\n");
-            sb.Append("TIMEBASE=1/1000\n");
-            sb.Append($"START={Start.TotalMilliseconds.ToString(NumberFormatInfo.InvariantInfo)}\n");
-            sb.Append($"END={Finish.TotalMilliseconds.ToString(NumberFormatInfo.InvariantInfo)}\n");
-            sb.Append($"title=Chapter {num}\n");
-            sb.Append('\n');
-            
-            return sb.ToString();
-        }
-    }
-
-    private record AnalysisResult(List<BlackSection> BlackSections, List<Chapter> Chapters);
-
-    private record Window(TimeSpan Start, TimeSpan Finish)
-    {
-        public bool Contains(TimeSpan time) => time >= Start && time <= Finish;
     }
 }
