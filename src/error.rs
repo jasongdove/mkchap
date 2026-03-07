@@ -5,6 +5,8 @@ pub enum MkChapError {
     FileNotFound(String),
     FfProbeFailed,
     InvalidDuration,
+    InvalidWindow,
+    WindowStartBeforeFinish,
 }
 
 impl std::fmt::Display for MkChapError {
@@ -13,6 +15,12 @@ impl std::fmt::Display for MkChapError {
             MkChapError::FileNotFound(path) => write!(f, "{path} does not exist"),
             MkChapError::FfProbeFailed => write!(f, "unable to determine input file duration"),
             MkChapError::InvalidDuration => write!(f, "unable to determine input file duration"),
+            MkChapError::InvalidWindow => write!(f, "invalid window"),
+            MkChapError::WindowStartBeforeFinish => {
+                write!(f, "window start must be before window finish")
+            }
         }
     }
 }
+
+impl std::error::Error for MkChapError {}
