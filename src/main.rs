@@ -5,9 +5,9 @@ mod window;
 
 use std::path::PathBuf;
 
-use clap::Parser;
 use crate::error::MkChapError;
 use crate::window::Window;
+use clap::Parser;
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -66,10 +66,11 @@ fn run(args: Args) -> Result<(), MkChapError> {
         args.input,
         args.min_black_seconds,
         args.ratio_black_pixels,
-        args.black_pixel_threshold
+        args.black_pixel_threshold,
     )?;
 
-    let output = detect_result.iter()
+    let output = detect_result
+        .iter()
         .map(|d| d.as_secs_f64())
         .map(|f| f.to_string())
         .collect::<Vec<String>>()
@@ -92,7 +93,7 @@ fn validate_float(s: &str, description: &str) -> Result<f64, String> {
         .parse()
         .map_err(|_| format!("`{s}` isn't a valid {description}"))?;
 
-    if value >= 0.0 && value <= 1.0 {
+    if (0.0..=1.0).contains(&value) {
         Ok(value)
     } else {
         Err(format!("{description} not in range 0-1"))

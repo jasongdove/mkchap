@@ -41,20 +41,19 @@ pub fn black_detect(
 }
 
 fn get_black_sections(output: String) -> Result<Vec<Duration>, MkChapError> {
-    let floats = output.lines()
+    let floats = output
+        .lines()
         .flat_map(split_and_parse)
         .collect::<Vec<f64>>();
 
-    let chunks: Vec<&[f64]> = floats
-        .chunks(2)
-        .filter(|c| c.len() == 2)
-        .collect();
+    let chunks: Vec<&[f64]> = floats.chunks(2).filter(|c| c.len() == 2).collect();
 
-    if chunks.len() < 1 {
+    if chunks.is_empty() {
         return Err(MkChapError::BlackDetectFailed);
     }
 
-    let midpoints = chunks.iter()
+    let midpoints = chunks
+        .iter()
         .map(|c| {
             let start = c[0];
             let finish = c[1];
@@ -75,9 +74,10 @@ fn split_and_parse(line: &str) -> Option<f64> {
         return None;
     }
 
-    trimmed.split('=').last()
-        .map(|s| s.parse::<f64>().ok())
-        .flatten()
+    trimmed
+        .split('=')
+        .next_back()
+        .and_then(|s| s.parse::<f64>().ok())
 }
 
 fn fix_path_string(path_string: String) -> String {
