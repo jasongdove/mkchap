@@ -6,7 +6,7 @@ mod window;
 use std::path::PathBuf;
 
 use clap::Parser;
-
+use crate::error::MkChapError;
 use crate::window::Window;
 
 #[derive(Debug, Parser)]
@@ -51,40 +51,32 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
-    match duration::get_duration(args.input.clone()) {
-        Err(err) => {
-            eprintln!("{err}");
-            std::process::exit(1);
-        }
-        Ok(duration) => {
-            let formatted_duration = duration.as_secs_f64();
-            println!("duration is {formatted_duration}");
-
-            let detect_result = black_detect::black_detect(
-                args.input,
-                args.min_black_seconds,
-                args.ratio_black_pixels,
-                args.black_pixel_threshold
-            );
-
-            match detect_result {
-                Err(err) => {
-                    eprintln!("{err}");
-                    std::process::exit(1);
-                },
-                Ok(detect_result) => {
-                    let output = detect_result.iter()
-                        .map(|d| d.as_secs_f64())
-                        .map(|f| f.to_string())
-                        .collect::<Vec<String>>()
-                        .join(" ");
-                    println!("detected stuff... sections: [{output}]");
-                }
-            }
-        }
+    if let Err(err) = run(args) {
+        eprintln!("{err}");
+        std::process::exit(1);
     }
+}
 
-    //dbg!(args);
+fn run(args: Args) -> Result<(), MkChapError> {
+    let duration = duration::get_duration(args.input.clone())?;
+    let formatted_duration = duration.as_secs_f64();
+    println!("duration is {formatted_duration}");
+
+    let detect_result = black_detect::black_detect(
+        args.input,
+        args.min_black_seconds,
+        args.ratio_black_pixels,
+        args.black_pixel_threshold
+    )?;
+
+    let output = detect_result.iter()
+        .map(|d| d.as_secs_f64())
+        .map(|f| f.to_string())
+        .collect::<Vec<String>>()
+        .join(" ");
+    println!("detected stuff... sections: [{output}]");
+
+    Ok(())
 }
 
 fn black_pixel_threshold_in_range(s: &str) -> Result<f64, String> {
