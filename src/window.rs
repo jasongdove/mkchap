@@ -17,10 +17,17 @@ pub fn window_parser(s: &str) -> Result<Window, String> {
         if spots.len() != 2 {
             Err("Invalid window".to_string())
         } else {
-            Ok(Window {
-                start: spots[0],
-                finish: spots[1],
-            })
+            let start = spots[0];
+            let finish = spots[1];
+
+            if start >= finish {
+                Err("window start must be before window finish".to_string())
+            } else {
+                Ok(Window {
+                    start: spots[0],
+                    finish: spots[1],
+                })
+            }
         }
     } else {
         Err("Invalid window".to_string())
