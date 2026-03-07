@@ -1,11 +1,16 @@
+mod duration;
+mod error;
 mod window;
 
+use std::path::PathBuf;
+
 use clap::Parser;
-use window::{Window, window_parser};
+
+use crate::window::{Window, window_parser};
 
 #[derive(Debug, Parser)]
 struct Args {
-    input: String,
+    input: PathBuf,
 
     #[arg(
         short = 's',
@@ -45,7 +50,18 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
-    dbg!(args);
+    match duration::get_duration(args.input) {
+        Err(err) => {
+            eprintln!("{err}");
+            std::process::exit(1);
+        }
+        Ok(duration) => {
+            let formatted_duration = duration.as_secs_f64();
+            println!("duration is {formatted_duration}");
+        }
+    }
+
+    //dbg!(args);
 }
 
 fn black_pixel_threshold_in_range(s: &str) -> Result<f64, String> {
