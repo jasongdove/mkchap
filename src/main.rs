@@ -6,7 +6,7 @@ use std::path::PathBuf;
 
 use clap::Parser;
 
-use crate::window::{Window, window_parser};
+use crate::window::Window;
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -42,7 +42,7 @@ struct Args {
         short = 'w',
         long = "windows",
         help = "comma-separated list of second ranges; any black sections outside of these ranges will be ignored",
-        value_parser = window_parser,
+        value_parser = window::window_parser,
         value_delimiter = ','
     )]
     windows: Vec<Window>,

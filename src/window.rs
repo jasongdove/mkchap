@@ -1,17 +1,14 @@
-use std::time::Duration;
-
 #[derive(Debug, Clone)]
 pub struct Window {
-    start: Duration,
-    finish: Duration,
+    start: f64,
+    finish: f64,
 }
 
 pub fn window_parser(s: &str) -> Result<Window, String> {
     if s.contains(':') {
-        let spots: Vec<Duration> = s
+        let spots: Vec<f64> = s
             .split(':')
             .flat_map(|s| s.parse::<f64>().ok())
-            .map(Duration::from_secs_f64)
             .collect();
 
         if spots.len() != 2 {
