@@ -42,8 +42,6 @@ pub fn black_detect(
 
 fn get_black_sections(output: String) -> Result<Vec<Duration>, MkChapError> {
     let floats = output.lines()
-        .map(&str::trim)
-        .filter(|s| !s.is_empty())
         .flat_map(split_and_parse)
         .collect::<Vec<f64>>();
 
@@ -71,11 +69,13 @@ fn get_black_sections(output: String) -> Result<Vec<Duration>, MkChapError> {
 }
 
 fn split_and_parse(line: &str) -> Option<f64> {
-    if !line.contains('=') {
+    let trimmed = line.trim();
+
+    if trimmed.is_empty() || !trimmed.contains('=') {
         return None;
     }
 
-    line.split('=').last()
+    trimmed.split('=').last()
         .map(|s| s.parse::<f64>().ok())
         .flatten()
 }
