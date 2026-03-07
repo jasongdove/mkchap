@@ -1,3 +1,4 @@
+mod black_detect;
 mod duration;
 mod error;
 mod window;
@@ -50,7 +51,7 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
-    match duration::get_duration(args.input) {
+    match duration::get_duration(args.input.clone()) {
         Err(err) => {
             eprintln!("{err}");
             std::process::exit(1);
@@ -58,6 +59,28 @@ fn main() {
         Ok(duration) => {
             let formatted_duration = duration.as_secs_f64();
             println!("duration is {formatted_duration}");
+
+            let detect_result = black_detect::black_detect(
+                args.input,
+                args.min_black_seconds,
+                args.ratio_black_pixels,
+                args.black_pixel_threshold
+            );
+
+            match detect_result {
+                Err(err) => {
+                    eprintln!("{err}");
+                    std::process::exit(1);
+                },
+                Ok(detect_result) => {
+                    let output = detect_result.iter()
+                        .map(|d| d.as_secs_f64())
+                        .map(|f| f.to_string())
+                        .collect::<Vec<String>>()
+                        .join(" ");
+                    println!("detected stuff... sections: [{output}]");
+                }
+            }
         }
     }
 

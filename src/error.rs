@@ -7,6 +7,7 @@ pub enum MkChapError {
     InvalidDuration,
     InvalidWindow,
     WindowStartBeforeFinish,
+    BlackDetectFailed,
 }
 
 impl std::fmt::Display for MkChapError {
@@ -19,6 +20,7 @@ impl std::fmt::Display for MkChapError {
             MkChapError::WindowStartBeforeFinish => {
                 write!(f, "window start must be before window finish")
             }
+            MkChapError::BlackDetectFailed => write!(f, "black detect failed"),
         }
     }
 }
