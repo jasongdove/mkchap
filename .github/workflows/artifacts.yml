@@ -175,7 +175,7 @@ jobs:
 
           # Build everything
           cargo build --release
-          mv target/release/mkchap "$release_name/"
+          mkdir "$release_name" && mv target/release/mkchap "$release_name/"
 
           # Pack files
           if [ "${{ matrix.kind }}" == "windows" ]; then
