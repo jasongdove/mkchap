@@ -6,9 +6,11 @@ mod window;
 
 use std::path::PathBuf;
 
+use crate::black_section::BlackSection;
 use crate::error::MkChapError;
 use crate::window::Window;
 use clap::Parser;
+use serde::Serialize;
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -50,6 +52,12 @@ struct Args {
     windows: Vec<Window>,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all(serialize = "PascalCase"))]
+struct AnalysisResult {
+    black_sections: Vec<BlackSection>,
+}
+
 fn main() {
     let args = Args::parse();
     if let Err(err) = run(args) {
@@ -60,23 +68,29 @@ fn main() {
 
 fn run(args: Args) -> Result<(), MkChapError> {
     let duration = duration::get_duration(args.input.clone())?;
-    let formatted_duration = duration.as_secs_f64();
-    println!("duration is {formatted_duration}");
+
+    let valid_windows = args
+        .windows
+        .iter()
+        .flat_map(|w| w.adjust_by(duration))
+        .collect();
 
     let detect_result = black_detect::black_detect(
         args.input,
         args.min_black_seconds,
         args.ratio_black_pixels,
         args.black_pixel_threshold,
-        args.windows,
+        valid_windows,
     )?;
 
-    let output = detect_result
-        .iter()
-        .map(|d| d.to_string())
-        .collect::<Vec<String>>()
-        .join(" ");
-    println!("detected stuff... sections: [{output}]");
+    let analysis_result = AnalysisResult {
+        black_sections: detect_result,
+    };
+
+    let output =
+        serde_json::to_string_pretty(&analysis_result).unwrap_or("failed to serialize".to_string());
+
+    println!("{output}");
 
     Ok(())
 }

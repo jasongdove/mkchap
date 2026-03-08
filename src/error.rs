@@ -6,7 +6,6 @@ pub enum MkChapError {
     FfProbeFailed,
     InvalidDuration,
     InvalidWindow,
-    WindowStartBeforeFinish,
     BlackDetectFailed,
 }
 
@@ -17,9 +16,6 @@ impl std::fmt::Display for MkChapError {
             MkChapError::FfProbeFailed => write!(f, "unable to determine input file duration"),
             MkChapError::InvalidDuration => write!(f, "unable to determine input file duration"),
             MkChapError::InvalidWindow => write!(f, "invalid window"),
-            MkChapError::WindowStartBeforeFinish => {
-                write!(f, "window start must be before window finish")
-            }
             MkChapError::BlackDetectFailed => write!(f, "black detect failed"),
         }
     }

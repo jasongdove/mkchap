@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crate::error::MkChapError;
 
 #[derive(Debug, Clone)]
@@ -9,6 +11,26 @@ pub struct Window {
 impl Window {
     pub fn contains(&self, midpoint: f64) -> bool {
         midpoint >= self.start && midpoint <= self.finish
+    }
+
+    pub fn adjust_by(&self, duration: Duration) -> Option<Window> {
+        let start = if self.start < 0.0 {
+            duration.as_secs_f64() - self.start
+        } else {
+            self.start
+        };
+
+        let finish = if self.finish < 0.0 {
+            duration.as_secs_f64() - self.finish
+        } else {
+            self.finish
+        };
+
+        if start >= finish {
+            None
+        } else {
+            Some(Window { start, finish })
+        }
     }
 }
 
@@ -23,12 +45,8 @@ pub fn window_parser(s: &str) -> Result<Window, MkChapError> {
         return Err(MkChapError::InvalidWindow);
     }
 
-    let start = spots[0];
-    let finish = spots[1];
-
-    if start >= finish {
-        return Err(MkChapError::WindowStartBeforeFinish);
-    }
-
-    Ok(Window { start, finish })
+    Ok(Window {
+        start: spots[0],
+        finish: spots[1],
+    })
 }
