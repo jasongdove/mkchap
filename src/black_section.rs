@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use serde::{Serialize, Serializer};
 
-#[derive(Serialize)]
+#[derive(Serialize, PartialEq)]
 pub enum BlackSectionState {
     Ok,
     TooShort,
@@ -27,7 +27,7 @@ pub struct BlackSection {
     start: Duration,
     #[serde(serialize_with = "serialize_duration")]
     finish: Duration,
-    state: BlackSectionState,
+    pub state: BlackSectionState,
     #[serde(serialize_with = "serialize_duration")]
     duration: Duration,
 }
@@ -38,8 +38,12 @@ impl BlackSection {
             start: Duration::from_secs_f64(start),
             finish: Duration::from_secs_f64(finish),
             state,
-            duration: Duration::from_secs_f64(finish - start)
+            duration: Duration::from_secs_f64(finish - start),
         }
+    }
+
+    pub fn midpoint(&self) -> Duration {
+        self.start + (self.finish - self.start).div_f64(2.0)
     }
 }
 
@@ -52,7 +56,7 @@ fn duration_to_string(duration: &Duration) -> String {
     format!("{hours:02}:{minutes:02}:{seconds:02}.{nanos:07}")
 }
 
-fn serialize_duration<S>(duration: &Duration, serializer: S) -> Result<S::Ok, S::Error>
+pub fn serialize_duration<S>(duration: &Duration, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {

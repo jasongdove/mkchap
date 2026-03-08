@@ -1,16 +1,19 @@
 mod black_detect;
 mod black_section;
+mod chapter;
 mod duration;
 mod error;
 mod window;
 
 use std::path::PathBuf;
 
-use crate::black_section::BlackSection;
-use crate::error::MkChapError;
-use crate::window::Window;
 use clap::Parser;
 use serde::Serialize;
+
+use crate::black_section::BlackSection;
+use crate::chapter::Chapter;
+use crate::error::MkChapError;
+use crate::window::Window;
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -56,6 +59,7 @@ struct Args {
 #[serde(rename_all(serialize = "PascalCase"))]
 struct AnalysisResult {
     black_sections: Vec<BlackSection>,
+    chapters: Vec<Chapter>,
 }
 
 fn main() {
@@ -83,8 +87,11 @@ fn run(args: Args) -> Result<(), MkChapError> {
         valid_windows,
     )?;
 
+    let chapters = chapter::from_black_sections(&detect_result, duration);
+
     let analysis_result = AnalysisResult {
         black_sections: detect_result,
+        chapters,
     };
 
     let output =
