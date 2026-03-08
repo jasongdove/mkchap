@@ -28,6 +28,8 @@ pub struct BlackSection {
     #[serde(serialize_with = "serialize_duration")]
     finish: Duration,
     state: BlackSectionState,
+    #[serde(serialize_with = "serialize_duration")]
+    duration: Duration,
 }
 
 impl BlackSection {
@@ -36,6 +38,7 @@ impl BlackSection {
             start: Duration::from_secs_f64(start),
             finish: Duration::from_secs_f64(finish),
             state,
+            duration: Duration::from_secs_f64(finish - start)
         }
     }
 }
