@@ -12,19 +12,19 @@ jobs:
       - name: Get the sources
         uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          dotnet-version: 8.0.x
+          components: rustfmt
+
+      - name: Rustfmt Check
+        uses: actions-rust-lang/rustfmt@v1
 
       - name: Clean
-        run: dotnet clean --configuration Release && dotnet nuget locals all --clear
-
-      - name: Install dependencies
-        run: dotnet restore
+        run: cargo clean
 
       - name: Build
-        run: dotnet build --configuration Release --no-restore
+        run: cargo build
 
-#      - name: Test
-#        run: dotnet test --no-restore --verbosity normal
+      - name: Test
+        run: cargo test

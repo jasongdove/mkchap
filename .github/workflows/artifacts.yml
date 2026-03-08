@@ -161,26 +161,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 8.0.x
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: Clean
-        run: dotnet clean --configuration Release && dotnet nuget locals all --clear
-
-      - name: Install dependencies
-        run: dotnet restore -r "${{ matrix.target}}"
+        run: cargo clean
 
       - name: Build
-        shell: bash
         run: |
           # Define some variables for things we need
           release_name="mkchap-${{ inputs.release_version }}-${{ matrix.target }}"
           echo "RELEASE_NAME=${release_name}" >> $GITHUB_ENV
 
           # Build everything
-          dotnet publish MkChap.csproj --framework net8.0 --runtime "${{ matrix.target }}" -c Release -o "$release_name" -p:InformationalVersion="${{ inputs.release_version }}-${{ matrix.target }}" -p:EnableCompressionInSingleFile=true -p:DebugType=Embedded -p:PublishSingleFile=true --self-contained true
+          cargo build --release
+          mv target/release/mkchap "$release_name/"
 
           # Pack files
           if [ "${{ matrix.kind }}" == "windows" ]; then
