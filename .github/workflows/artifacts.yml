@@ -176,12 +176,14 @@ jobs:
 
           # Build everything
           cargo build --release
-          mkdir "$release_name" && mv target/release/mkchap* "$release_name/"
 
           # Pack files
+          mkdir "$release_name"
           if [ "${{ matrix.kind }}" == "windows" ]; then
+            mv target/release/mkchap.exe "$release_name/"
             7z a -tzip "${release_name}.zip" "./${release_name}/*"
           else
+            mv target/release/mkchap "$release_name/"
             tar czvf "${release_name}.tar.gz" "$release_name"
           fi
 
