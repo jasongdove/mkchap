@@ -1,15 +1,15 @@
 # mkchap
 
-This is a small app to detect and add/replace chapter metadata in a video.
+This is a small app to detect chapter metadata in a video.
 
 ## Dependencies
 
-This app requires ffprobe and ffmpeg
+This app requires ffprobe.
 
 ## Usage
 
 ```bash
-./mkchap -i <inputfile> [-s <min_black_seconds>] [-r <ratio_black_pixels>] [-b <black_pixel_threshold>] [-w <window_list>] [-o <outputfile>]
+./mkchap [-s <min_black_seconds>] [-r <ratio_black_pixels>] [-b <black_pixel_threshold>] [-w <window_list>] <inputfile>
 ```
 
 - `min_black_seconds` is the minimum number of seconds the video should be black to insert a chapter marker
@@ -20,4 +20,4 @@ This app requires ffprobe and ffmpeg
   - A good starting value is `0.0`
 - `window_list` is a comma-separated list of second ranges (i.e. `55:65,505:515`). any black sections occurring outside of these windows will be ignored
 
-If no output file is specified, mkchap will operate in a "dry-run" mode and print the detected black sections and resulting chapters.
+mkchap will print the detected black sections and resulting chapters.
