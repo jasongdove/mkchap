@@ -67,7 +67,7 @@ fn get_black_sections(
             let midpoint: f64 = start + (finish - start) / 2.0;
             if start < min_black_seconds || (finish - start) < min_black_seconds {
                 BlackSection::new(start, finish, BlackSectionState::TooShort)
-            } else if windows.iter().all(|w| !w.contains(midpoint)) {
+            } else if !windows.is_empty() && windows.iter().all(|w| !w.contains(midpoint)) {
                 BlackSection::new(start, finish, BlackSectionState::OutsideOfWindows)
             } else {
                 BlackSection::new(start, finish, BlackSectionState::Ok)
