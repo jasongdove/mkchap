@@ -1,13 +1,16 @@
-use crate::error::MkChapError;
 use std::path::PathBuf;
-use std::time::Duration;
+
+use crate::black_section::{BlackSection, BlackSectionState};
+use crate::error::MkChapError;
+use crate::window::Window;
 
 pub fn black_detect(
     input: PathBuf,
     min_black_seconds: f64,
     ratio_black_pixels: f64,
     black_pixel_threshold: f64,
-) -> Result<Vec<Duration>, MkChapError> {
+    windows: Vec<Window>,
+) -> Result<Vec<BlackSection>, MkChapError> {
     let path_string = input
         .into_os_string()
         .into_string()
@@ -37,10 +40,14 @@ pub fn black_detect(
 
     String::from_utf8(output.stdout)
         .map_err(|_| MkChapError::BlackDetectFailed)
-        .and_then(get_black_sections)
+        .and_then(|s| get_black_sections(s, min_black_seconds, windows))
 }
 
-fn get_black_sections(output: String) -> Result<Vec<Duration>, MkChapError> {
+fn get_black_sections(
+    output: String,
+    min_black_seconds: f64,
+    windows: Vec<Window>,
+) -> Result<Vec<BlackSection>, MkChapError> {
     let floats = output
         .lines()
         .flat_map(split_and_parse)
@@ -58,9 +65,13 @@ fn get_black_sections(output: String) -> Result<Vec<Duration>, MkChapError> {
             let start = c[0];
             let finish = c[1];
             let midpoint: f64 = start + (finish - start) / 2.0;
-            Duration::from_secs_f64(midpoint)
-
-            // TODO: filter based on min black seconds and on windows
+            if start < min_black_seconds || (finish - start) < min_black_seconds {
+                BlackSection::new(start, finish, BlackSectionState::TooShort)
+            } else if windows.iter().all(|w| !w.contains(midpoint)) {
+                BlackSection::new(start, finish, BlackSectionState::OutsideOfWindows)
+            } else {
+                BlackSection::new(start, finish, BlackSectionState::Ok)
+            }
         })
         .collect();
 

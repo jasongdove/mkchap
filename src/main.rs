@@ -1,4 +1,5 @@
 mod black_detect;
+mod black_section;
 mod duration;
 mod error;
 mod window;
@@ -67,12 +68,12 @@ fn run(args: Args) -> Result<(), MkChapError> {
         args.min_black_seconds,
         args.ratio_black_pixels,
         args.black_pixel_threshold,
+        args.windows,
     )?;
 
     let output = detect_result
         .iter()
-        .map(|d| d.as_secs_f64())
-        .map(|f| f.to_string())
+        .map(|d| d.to_string())
         .collect::<Vec<String>>()
         .join(" ");
     println!("detected stuff... sections: [{output}]");

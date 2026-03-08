@@ -6,6 +6,12 @@ pub struct Window {
     finish: f64,
 }
 
+impl Window {
+    pub fn contains(&self, midpoint: f64) -> bool {
+        midpoint >= self.start && midpoint <= self.finish
+    }
+}
+
 pub fn window_parser(s: &str) -> Result<Window, MkChapError> {
     if !s.contains(':') {
         return Err(MkChapError::InvalidWindow);
