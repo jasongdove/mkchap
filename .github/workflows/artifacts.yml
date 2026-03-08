@@ -168,6 +168,7 @@ jobs:
         run: cargo clean
 
       - name: Build
+        shell: bash
         run: |
           # Define some variables for things we need
           release_name="mkchap-${{ inputs.release_version }}-${{ matrix.target }}"
@@ -175,7 +176,7 @@ jobs:
 
           # Build everything
           cargo build --release
-          mkdir "$release_name" && mv target/release/mkchap "$release_name/"
+          mkdir "$release_name" && mv target/release/mkchap* "$release_name/"
 
           # Pack files
           if [ "${{ matrix.kind }}" == "windows" ]; then
